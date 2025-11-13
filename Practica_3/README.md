@@ -82,10 +82,10 @@ Respuesta: 200 OK con el contenido del carrito del usuario autenticado
 
 ### Validaciones y Manejo de Errores
 
-    Body no es JSON válido → 400 Bad Request con "Invalid JSON body"
-    Campos faltantes o tipo incorrecto → 400 con mensaje descriptivo
-    Usuario/email ya registrado → 409 Conflict con mensaje adecuado
-    Producto no encontrado (id inválido) → 404 Not Found con { message:"Product not found" }
-    Stock insuficiente al añadir al carrito → 400 con { message:"Insufficient stock" }
-    Token expirado/incorrecto → 401 Unauthorized con "Token inválido"
-    Ruta no existente (middleware catch‑all) → 404 Not Found con { message:"Not found" }
+Body no es JSON válido → 400 Bad Request con "Invalid JSON body"
+Campos faltantes o tipo incorrecto → 400 con mensaje descriptivo
+Usuario/email ya registrado → 409 Conflict con mensaje adecuado
+Producto no encontrado (id inválido) → 404 Not Found con { message:"Product not found" }
+Stock insuficiente al añadir al carrito → 400 con { message:"Insufficient stock" }
+Token expirado/incorrecto → 401 Unauthorized con "Token inválido"
+Ruta no existente (middleware catch‑all) → 404 Not Found con { message:"Not found" }

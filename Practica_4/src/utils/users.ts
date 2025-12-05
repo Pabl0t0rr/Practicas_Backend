@@ -41,7 +41,7 @@ export const validateUser = async (email : string, password : string, username: 
     return user;
 };
 
-
+//Encontrar usuario por id
 export const findUserById = async (id : string) => {
     const db = getDB();
     return await db.collection(coleccion).findOne({ _id: new ObjectId(id) });

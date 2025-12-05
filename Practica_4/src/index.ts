@@ -3,7 +3,7 @@ import { ApolloServer } from "apollo-server";
 
 //Import rutas
 import { connectMongoDB, closeMongoDB } from "./db/mongo"
-import { typeDefs } from "./graphql/squema";
+import { typeDefs } from "./graphql/schema";
 import { resolvers } from "./graphql/resolvers";
 import { getUserToken } from "./utils/auth";
 

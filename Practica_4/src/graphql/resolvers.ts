@@ -160,12 +160,12 @@ export const resolvers: IResolvers = {
             const db = getDB();
             //Comporbacion que el token recivido es el owner del proyecto
             const project = await db
-                .collection<Projects>(process.env.COLLECTION_NAME_P!)
+                .collection<Projects>(process.env.COLLECTION_NAME_P as string)
                 .findOne({ _id: new ObjectId(id) });
             if(!project) throw new Error("Project not found");
             if(project.owner !== user._id.toString()) throw new Error("Not authorized to update this project");
     
-            await db.collection<Projects>(process.env.COLLECTION_NAME_P!).updateOne (
+            await db.collection<Projects>(process.env.COLLECTION_NAME_P as string).updateOne (
                 { _id: new ObjectId(id) },
                 { $set: {
                     name: input.name || project.name,
@@ -205,7 +205,7 @@ export const resolvers: IResolvers = {
                 .findOne({ _id: new ObjectId(projectId) });
         },
 
-        //
+        //Funciona
         createTask: async(_, {projectId, input} : {projectId: string, input: {title: string, assignedTo: string[], status: string, priority: string, dueDate: string}}, ctx) => {
             const user = ctx.user;
             if(!user) throw new Error("Not authenticated");
@@ -240,11 +240,42 @@ export const resolvers: IResolvers = {
                 {_id: new ObjectId(projectId) },
                 {$set: {tasks: [...project.tasks, result.insertedId.toString()] }}
             )
-            
+
             //Mostrarlo
             return await db
                 .collection<Tasks>(process.env.COLLECTION_NAME_T as string)
                 .findOne({ _id: result.insertedId });
         },    
+
+        //Funciona
+        updateTaskStatus: async(_, {taskId, status} : {taskId: string, status: {status: string}}, ctx) => {
+             const user = ctx.user;
+            if(!user) throw new Error("Not authenticated");
+            
+            const db = getDB();
+            //comprobr que sean miemnros de la task
+            const task = await db.collection<Tasks>(process.env.COLLECTION_NAME_T as string).findOne({ _id: new ObjectId (taskId) });
+            if(!task?.assignedTo.includes(user._id.toString())) throw new Error ("Not authorized to update this task");
+
+            //Validacion status
+            const newStatus = validateSatus(status.status);
+
+            await db.collection<Tasks>(process.env.COLLECTION_NAME_T as string).updateOne(
+                { _id: new ObjectId(taskId) },
+                { $set: { status: newStatus } }
+            );
+
+            //Actualizacion en projects
+            const project = await db
+            .collection<Projects>(process.env.COLLECTION_NAME_P as string)
+            .findOne({ _id: task.projectId });
+
+            //Mostrarlo
+            return await db
+                .collection<Tasks>(process.env.COLLECTION_NAME_T as string)
+                .findOne({ _id: new ObjectId (taskId) });
+        },
+        
+
     },
 };

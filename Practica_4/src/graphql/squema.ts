@@ -78,8 +78,7 @@ export const typeDefs = gql`
     }
 
     input UpdateTaskInput {
-        status: String,
-        priority: String
+        status: String
     }
 
     type Query {

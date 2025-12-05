@@ -22,27 +22,43 @@ import dotenv from "dotenv";
 dotenv.config();
 
 export const resolvers: IResolvers = {
-    Query: {//Funciona
-
-       //Devolvera los projectos dnd el usuario que se pasa es owner o member 
+    Query: {
+       
+        //Devolvera los projectos dnd el usuario que se pasa es owner o member 
        myProjects: async (_, __, ctx) => {
         const user = ctx.user;
         if(!user) throw new Error("Not authenticated");
 
         const db = getDB();
-        
-        const projects = await db.collection<Projects>(process.env.COLLECTION_NAME_P!).find().toArray();
+        //Mostrar ids proyectso del usuario que se pasa es owner o member
+        const projects = await db
+            .collection<Projects>(process.env.COLLECTION_NAME_P as string)
+            .find({
+                $or: [
+                    { owner: user._id.toString() },
+                    { members: user._id.toString() }]
+                })
+            .toArray();
+        if(projects.length === 0) {
+            throw new Error("No projects found for this user");
+        }
 
-        return projects.map((projects) => projects._id.toString());
+        return projects.map((project) => project._id.toString());
 
        },
-
+       
        //Devuelve el contenido conmpleto del ID del proyecto que se ha puesto
        projectDetails: async(_, {id} : {id: string}, ctx) => {
         const user = ctx.user;
         if(!user) throw new Error("Not authenticated");
         
         const db = getDB();
+
+        const validId = await db
+            .collection<Projects>(process.env.COLLECTION_NAME_P as string)
+            .findOne({ _id: new ObjectId(id) });
+            
+        if(!validId) throw new Error("Project not found");
 
         return await db.collection<Projects>(process.env.COLLECTION_NAME_P!).find({ _id: new ObjectId(id) }).toArray();
        },

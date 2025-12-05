@@ -7,6 +7,6 @@ export type Projects  = {
   startDate: Date,
   endDate: Date,
   owner: string,
-  members: string[] | null,
-  tasks: string[] | null
+  members: string[],
+  tasks: string[]
 }

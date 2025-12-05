@@ -16,12 +16,12 @@ import { signToken } from "../utils/auth";
 
 //Import environment variables
 import dotenv from "dotenv";
-import { get } from "http";
+
 
 dotenv.config();
 
 export const resolvers: IResolvers = {
-    Query: {//No funciona ninguna query
+    Query: {//Funciona la query de myProjects y Users
 
        //Devolvera los projectos dnd el usuario que se pasa es owner o member 
        myProjects: async (_, __, ctx) => {
@@ -61,18 +61,51 @@ export const resolvers: IResolvers = {
     },
 
     Projects: {
-        owner: async (parent: Projects) : Promise<User> => {
+        owner: async (parent: Projects) => {
             const db = getDB();
-            const userId = parent.owner;
+            const owner = parent.owner;
             return db
-            .collection<User>(process.env.COLLECTION_NAME_U!)
-            .findOne({_id : new ObjectId(userId)}) as Promise<User>;
+            .collection<User>(process.env.COLLECTION_NAME_U as string)
+            .findOne({_id : new ObjectId(owner)}) as Promise<User>;
         },
-
+        members: async(parent: Projects) => {
+            const db = getDB();
+            const listaIdsMembers = parent.members;
+            const objectIds = await listaIdsMembers.map((id) => new ObjectId(id));
+            return db
+                .collection(process.env.COLLECTION_NAME_U as string)
+                .find({ _id: { $in: objectIds } })
+                .toArray();
+        },
+        tasks: async(parent : Projects) => {
+            const db = getDB();
+            const listaIdsTareas = parent.tasks;
+            const objectIds = await listaIdsTareas.map((id) => new ObjectId(id));
+            return db
+                .collection(process.env.COLLECTION_NAME_T as string)
+                .find({_id : {$in: objectIds}})
+                .toArray();
+        }
     },
 
     Tasks: {
+        projectId: async (parent: Tasks) => {
+            const db = getDB();
+            const listaIDProject = parent.projectId;
+            const objectId = await listaIDProject.map((id) => new ObjectId(id));
+            return db 
+                .collection(process.env.COLLECTION_NAME_P as string)
+                .findOne({_id: {_id : objectId}})
+        },
 
+        assignedTo: async(parent : Tasks) => {
+            const db = getDB();
+            const listaIdUsers = parent.assignedTo;
+            const objectId = await listaIdUsers.map((id) => new ObjectId(id));
+            return db 
+                .collection(process.env.COLLECTION_NAME_U as string)
+                .findOne({_id: {$in: objectId}})
+            }
     },
 
     Mutation: {
@@ -96,12 +129,10 @@ export const resolvers: IResolvers = {
             }
         },
 
-        //No funciona :)
-        createProject: async (_, {input} : {input: {name: string, description?: string, startDate: string, endDate: string, owner: string, members: string[], tasks: string[]}}, {ctx} ) => {
+        //Funciona
+        createProject: async (_, {input} : {input: {name: string, description?: string, startDate: string, endDate: string, members: string[], tasks: string[]}}, ctx ) => {
              const user = ctx.user;
             if(!user) throw new Error("Not authenticated");
-
-            console.log("UserId pasado:", user._id.toString());
             
             const db = getDB();
             const result = await db.collection<Projects>(process.env.COLLECTION_NAME_P!).insertOne({
@@ -111,12 +142,16 @@ export const resolvers: IResolvers = {
                 startDate: new Date(input.startDate),
                 endDate: new Date(input.endDate),
                 owner : user._id.toString(),
-                members: [input.members.toString()],
-                tasks: [input.tasks.toString()]
+                members: input.members.map(id => id.toString()),
+                tasks: input.tasks.map(id => id.toString())
+    
             
             });
 
-            const project = await db.collection<Projects>(process.env.COLLECTION_NAME_P!).findOne({ _id: result.insertedId });
+            const project = await db
+                .collection<Projects>(process.env.COLLECTION_NAME_P!)
+                .findOne({ _id: result.insertedId });
+
             if(!project) throw new Error("Error creating project");
             return project;
         }

@@ -13,6 +13,7 @@ import { tokenPayload } from "../types/auth";
 //Import utils
 import { createUser, validateUser } from "../utils/users";
 import { signToken } from "../utils/auth";
+import { validatePriority, validateSatus } from "../utils/tasks";
 
 //Import environment variables
 import dotenv from "dotenv";
@@ -92,16 +93,15 @@ export const resolvers: IResolvers = {
         projectId: async (parent: Tasks) => {
             const db = getDB();
             const listaIDProject = parent.projectId;
-            const objectId = await listaIDProject.map((id) => new ObjectId(id));
-            return db 
+            return db   
                 .collection(process.env.COLLECTION_NAME_P as string)
-                .findOne({_id: {_id : objectId}})
+                .findOne({_id: listaIDProject})
         },
 
         assignedTo: async(parent : Tasks) => {
             const db = getDB();
             const listaIdUsers = parent.assignedTo;
-            const objectId = await listaIdUsers.map((id) => new ObjectId(id));
+            const objectId = await listaIdUsers.map((id) => new ObjectId(id as string));
             return db 
                 .collection(process.env.COLLECTION_NAME_U as string)
                 .findOne({_id: {$in: objectId}})
@@ -152,7 +152,7 @@ export const resolvers: IResolvers = {
                 .findOne({ _id: result.insertedId });
         },
 
-        //
+        //Funciona
         updateProject: async(_, {id, input} : {id : string, input: {name?: string, description?: string, startDate?: string, endDate?: string, members?: string[], tasks?: string[]}}, ctx) => {
             const user = ctx.user;
             if(!user) throw new Error("Not authenticated");
@@ -182,6 +182,7 @@ export const resolvers: IResolvers = {
                 .findOne({_id: new ObjectId(id)});
         },
 
+        //Funciona
         addMember: async(_, {projectId, userId} : {projectId: string, userId: string}, ctx) => {
             const user = ctx.user;
             if(!user) throw new Error("Not authenticated");
@@ -203,6 +204,47 @@ export const resolvers: IResolvers = {
                 .collection<Projects>(process.env.COLLECTION_NAME_P!)
                 .findOne({ _id: new ObjectId(projectId) });
         },
+
+        //
+        createTask: async(_, {projectId, input} : {projectId: string, input: {title: string, assignedTo: string[], status: string, priority: string, dueDate: string}}, ctx) => {
+            const user = ctx.user;
+            if(!user) throw new Error("Not authenticated");
             
+            const db = getDB();
+            //Comporbacion que el token recivido es el owner del proyecto o un miembro
+            const project = await db
+                .collection<Projects>(process.env.COLLECTION_NAME_P!)
+                .findOne({ _id: new ObjectId(projectId) });
+            if(!project) throw new Error("Project not found");
+            if(project.owner !== user._id.toString() && !project.members.includes(user._id.toString())) throw new Error("Not authorized to update this project");
+        
+            //Validaciones previas
+            const newStatus = validateSatus(input.status);
+            const newPriority = validatePriority(input.priority);
+
+            //Crear la tarea
+            const result = await db.collection<Tasks>(process.env.COLLECTION_NAME_T as string).insertOne({
+                _id: new ObjectId(),
+                title: input.title,
+                projectId: new ObjectId(projectId),
+                assignedTo: input.assignedTo.map((id) => id.toString()),
+                status: newStatus,
+                priority: newPriority,
+                dueDate: new Date(input.dueDate)
+            })
+
+            //Actualizar el proyecto con el id de la tarea
+            const actuProject = await db
+            .collection<Projects>(process.env.COLLECTION_NAME_P as string)
+            .updateOne( 
+                {_id: new ObjectId(projectId) },
+                {$set: {tasks: [...project.tasks, result.insertedId.toString()] }}
+            )
+            
+            //Mostrarlo
+            return await db
+                .collection<Tasks>(process.env.COLLECTION_NAME_T as string)
+                .findOne({ _id: result.insertedId });
+        },    
     },
 };

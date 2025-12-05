@@ -71,8 +71,7 @@ export const typeDefs = gql`
     
     input CreateTaskInput {
         title: String!,
-        projectId: ID!,
-        assignedTo: ID!,
+        assignedTo: [ID]!,
         status: String!,
         priority: String!,
         dueDate: String,

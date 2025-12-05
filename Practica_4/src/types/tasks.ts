@@ -3,9 +3,9 @@ import { ObjectId } from "mongodb"
 export type Tasks = {
     _id: ObjectId,
     title: String,
-    projectId: string[],
+    projectId: ObjectId,
     assignedTo: string[],
-    status: "PENDING" | "IN_PROGRESS" | "COMPLETED",
-    priority: "LOW" | "MEDIUM" | "HIGH",
+    status: string,
+    priority: string,
     dueDate: Date, 
 }

@@ -12,10 +12,11 @@ import { Tasks } from "../types/tasks";
 import { createUser, validateUser } from "../utils/users";
 import { signToken } from "../utils/auth";
 import { validatePriority, validateSatus } from "../utils/tasks";
+import { validateDate } from "../utils/projects";
 
 //Import environment variables
 import dotenv from "dotenv";
-import { validateDate } from "../utils/projects";
+
 
 
 dotenv.config();
@@ -168,13 +169,26 @@ export const resolvers: IResolvers = {
             if(!project) throw new Error("Project not found");
             if(project.owner !== user._id.toString()) throw new Error("Not authorized to update this project");
     
+            //Validacines fechas
+            let startDate = project.startDate;
+            let endDate = project.endDate;
+
+            if (input.startDate || input.endDate) {
+                const validatedDates = validateDate(
+                input.startDate || project.startDate.toISOString(),
+                input.endDate || project.endDate.toISOString()
+                );
+                startDate = validatedDates.startDate;
+                endDate = validatedDates.endDate;
+            }
+            
             await db.collection<Projects>(process.env.COLLECTION_NAME_P as string).updateOne (
                 { _id: new ObjectId(id) },
                 { $set: {
                     name: input.name || project.name,
                     description: input.description || project.description,
-                    startDate: input.startDate ? new Date (input.startDate) : project.startDate,
-                    endDate: input.endDate ? new Date (input.endDate) : project.endDate,
+                    startDate: startDate,
+                    endDate: endDate,
                     members: input.members ? input.members.map(id => id.toString()) : project.members,
                     tasks: input.tasks ? input.tasks.map(id => id.toString()) : project.tasks,
                 }});

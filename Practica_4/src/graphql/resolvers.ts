@@ -165,7 +165,7 @@ export const resolvers: IResolvers = {
             if(!project) throw new Error("Project not found");
             if(project.owner !== user._id.toString()) throw new Error("Not authorized to update this project");
     
-            const updatedProject = await db.collection<Projects>(process.env.COLLECTION_NAME_P!).updateOne (
+            await db.collection<Projects>(process.env.COLLECTION_NAME_P!).updateOne (
                 { _id: new ObjectId(id) },
                 { $set: {
                     name: input.name || project.name,
@@ -182,6 +182,27 @@ export const resolvers: IResolvers = {
                 .findOne({_id: new ObjectId(id)});
         },
 
+        addMember: async(_, {projectId, userId} : {projectId: string, userId: string}, ctx) => {
+            const user = ctx.user;
+            if(!user) throw new Error("Not authenticated");
+
+             const db = getDB();
+            //Comporbacion que el token recivido es el owner del proyecto
+            const project = await db
+                .collection<Projects>(process.env.COLLECTION_NAME_P!)
+                .findOne({ _id: new ObjectId(projectId) });
+            if(!project) throw new Error("Project not found");
+            if(project.owner !== user._id.toString()) throw new Error("Not authorized to update this project");
         
+            await db.collection<Projects>(process.env.COLLECTION_NAME_P!).updateOne(
+                { _id: new ObjectId(projectId) },
+                { $addToSet: { members: userId.toString() } }
+            );
+
+            return await db
+                .collection<Projects>(process.env.COLLECTION_NAME_P!)
+                .findOne({ _id: new ObjectId(projectId) });
+        },
+            
     },
 };

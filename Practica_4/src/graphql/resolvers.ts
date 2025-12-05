@@ -30,7 +30,9 @@ export const resolvers: IResolvers = {
 
         const db = getDB();
         
-        return await db.collection<Projects>(process.env.COLLECTION_NAME_P!).find().toArray();
+        const projects = await db.collection<Projects>(process.env.COLLECTION_NAME_P!).find().toArray();
+
+        return projects.map((projects) => projects._id.toString());
 
        },
 
@@ -52,9 +54,9 @@ export const resolvers: IResolvers = {
         const db = getDB();
 
         //Solo hay que devolver el array de IDS
-        return await db.collection<User>(process.env.COLLECTION_NAME_U!).find().toArray();
+        const users = await db.collection<User>(process.env.COLLECTION_NAME_U!).find().toArray();
         
-        
+        return users.map((user) => user._id.toString());
         }
     },
 

@@ -84,7 +84,7 @@ export const typeDefs = gql`
 
     type Query {
         myProjects: [ID]!,
-        projectDetails(id: ID!): [ID]!,
+        projectDetails(id: ID!): [Projects]!,
         users: [ID]!
     }
 

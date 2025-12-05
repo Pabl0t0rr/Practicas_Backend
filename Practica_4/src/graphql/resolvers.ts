@@ -275,7 +275,32 @@ export const resolvers: IResolvers = {
                 .collection<Tasks>(process.env.COLLECTION_NAME_T as string)
                 .findOne({ _id: new ObjectId (taskId) });
         },
+
+        //Funciona
+        deleteProject: async(_, {id}: {id: string}, ctx) => {
+             const user = ctx.user;
+            if(!user) throw new Error("Not authenticated");
+            
+            const db = getDB();
+            //Comporbacion que el token recivido es el owner del proyecto
+            const project = await db
+                .collection<Projects>(process.env.COLLECTION_NAME_P as string)
+                .findOne({ _id: new ObjectId(id) });
+            if(!project) throw new Error("Project not found");
+            if(project.owner !== user._id.toString()) throw new Error("Not authorized to delete this project");
         
+            //Borrar Proyecto con ese id
+            const projectDelete = await db
+                .collection<Projects>(process.env.COLLECTION_NAME_P as string)
+                .deleteOne({ _id: new ObjectId (id) });
+            
+            //Borrar todas las tareas en las que este el id del proyecto borrado
+            const taskDelete = await db
+                .collection<Tasks>(process.env.COLLECTION_NAME_T as string)
+                .deleteMany({ projectId: new ObjectId (id) });
+            
+            return projectDelete.deletedCount > 0;
+        }
 
     },
 };

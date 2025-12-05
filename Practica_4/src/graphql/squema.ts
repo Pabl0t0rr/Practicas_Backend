@@ -65,7 +65,8 @@ export const typeDefs = gql`
         description: String,
         startDate: String,
         endDate: String,
-        members: [ID]! ,
+        members: [ID],
+        tasks: [ID]
     }
     
     input CreateTaskInput {

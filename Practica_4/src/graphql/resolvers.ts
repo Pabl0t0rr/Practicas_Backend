@@ -144,18 +144,43 @@ export const resolvers: IResolvers = {
                 owner : user._id.toString(),
                 members: input.members.map(id => id.toString()),
                 tasks: input.tasks.map(id => id.toString())
-    
-            
             });
 
-            const project = await db
+            //Mostralo
+            return await db
                 .collection<Projects>(process.env.COLLECTION_NAME_P!)
                 .findOne({ _id: result.insertedId });
+        },
 
-            if(!project) throw new Error("Error creating project");
-            return project;
-        }
-
+        //
+        updateProject: async(_, {id, input} : {id : string, input: {name?: string, description?: string, startDate?: string, endDate?: string, members?: string[], tasks?: string[]}}, ctx) => {
+            const user = ctx.user;
+            if(!user) throw new Error("Not authenticated");
+    
+            const db = getDB();
+            //Comporbacion que el token recivido es el owner del proyecto
+            const project = await db
+                .collection<Projects>(process.env.COLLECTION_NAME_P!)
+                .findOne({ _id: new ObjectId(id) });
+            if(!project) throw new Error("Project not found");
+            if(project.owner !== user._id.toString()) throw new Error("Not authorized to update this project");
+    
+            const updatedProject = await db.collection<Projects>(process.env.COLLECTION_NAME_P!).updateOne (
+                { _id: new ObjectId(id) },
+                { $set: {
+                    name: input.name || project.name,
+                    description: input.description || project.description,
+                    startDate: input.startDate ? new Date (input.startDate) : project.startDate,
+                    endDate: input.endDate ? new Date (input.endDate) : project.endDate,
+                    members: input.members ? input.members.map(id => id.toString()) : project.members,
+                    tasks: input.tasks ? input.tasks.map(id => id.toString()) : project.tasks,
+                }});
+            
+            //Mostralo
+            return await db
+                .collection<Projects>(process.env.COLLECTION_NAME_P!)
+                .findOne({_id: new ObjectId(id)});
+        },
 
         
     },

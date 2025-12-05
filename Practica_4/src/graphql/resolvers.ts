@@ -7,8 +7,6 @@ import { IResolvers } from "@graphql-tools/utils";
 import { Projects } from "../types/projects";
 import { User } from "../types/users";
 import { Tasks } from "../types/tasks";
-import { tokenPayload } from "../types/auth";
-
 
 //Import utils
 import { createUser, validateUser } from "../utils/users";
@@ -17,12 +15,13 @@ import { validatePriority, validateSatus } from "../utils/tasks";
 
 //Import environment variables
 import dotenv from "dotenv";
+import { validateDate } from "../utils/projects";
 
 
 dotenv.config();
 
 export const resolvers: IResolvers = {
-    Query: {//Funciona la query de myProjects y Users
+    Query: {//Funciona
 
        //Devolvera los projectos dnd el usuario que se pasa es owner o member 
        myProjects: async (_, __, ctx) => {
@@ -135,12 +134,16 @@ export const resolvers: IResolvers = {
             if(!user) throw new Error("Not authenticated");
             
             const db = getDB();
+
+            //Validaciones fecha
+            const { startDate, endDate } = validateDate(input.startDate, input.endDate);
+            
             const result = await db.collection<Projects>(process.env.COLLECTION_NAME_P!).insertOne({
                 _id : new ObjectId(),
                 name: input.name,
                 description: input.description || "",
-                startDate: new Date(input.startDate),
-                endDate: new Date(input.endDate),
+                startDate: startDate,
+                endDate: endDate,
                 owner : user._id.toString(),
                 members: input.members.map(id => id.toString()),
                 tasks: input.tasks.map(id => id.toString())
